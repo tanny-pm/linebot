@@ -51,5 +51,5 @@ def get_chatgpt_response(prompt: str) -> str:
         ],
         max_tokens=1024,
     )
-    response: str = completion.choices[0].message
+    response: str = completion.choices[0].message.content
     return response
