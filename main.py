@@ -1,5 +1,6 @@
 import os
 
+import openai
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, Request
 from starlette.exceptions import HTTPException
@@ -11,18 +12,11 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 load_dotenv()
 
 app = FastAPI()
+
 line_bot_api = LineBotApi(os.environ.get("LINE_CHANNEL_ACCESS_TOKEN"))
 handler = WebhookHandler(os.environ.get("LINE_CHANNEL_SECRET"))
 
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int):
-    return {"item_id": item_id}
+openai.api_key = os.environ("OPENAI_API_KEY")
 
 
 @app.post("/callback")
@@ -42,6 +36,19 @@ async def callback(request: Request, x_line_signature=Header(None)):
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    line_bot_api.reply_message(
-        event.reply_token, TextSendMessage(text=event.message.text)
+    message: str = event.message.text
+    response: str = get_chatgpt_response(message)
+
+    line_bot_api.reply_message(event.reply_token, TextSendMessage(text=response))
+
+
+def get_chatgpt_response(prompt: str) -> str:
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "user", "content": f"{prompt}"},
+        ],
+        max_tokens=1024,
     )
+    response: str = completion.choices[0].message
+    return response
