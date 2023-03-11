@@ -38,6 +38,7 @@ async def callback(request: Request, x_line_signature=Header(None)):
 def handle_message(event):
     message: str = event.message.text
     response: str = get_chatgpt_response(message)
+    print(response)
 
     line_bot_api.reply_message(event.reply_token, TextSendMessage(text=response))
 
