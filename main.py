@@ -2,12 +2,18 @@ import os
 
 import openai
 from dotenv import load_dotenv
-from fastapi import FastAPI, Header, Request
-from starlette.exceptions import HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.responses import Response
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.models import (
+    ImageMessage,
+    MessageEvent,
+    StickerMessage,
+    TextMessage,
+    TextSendMessage,
+)
 
 load_dotenv()
 
@@ -52,17 +58,41 @@ async def callback(request: Request, x_line_signature=Header(None)):
         handler.handle(body.decode("utf-8"), x_line_signature)
     except InvalidSignatureError:
         raise HTTPException(
-            status_code=400,
+            status_code=403,
             detail="Invalid signature.",
         )
 
-    return "OK"
+    return Response(status_code=200)
 
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+    """テキストへの返信"""
+
     message: str = event.message.text
-    response: str = get_chatgpt_response(message)
+    response = get_chatgpt_response(message)
+    print(response)
+
+    line_bot_api.reply_message(event.reply_token, TextSendMessage(text=response))
+
+
+@handler.add(MessageEvent, message=StickerMessage)
+def handle_sticker(event):
+    """スタンプへの返信"""
+
+    prompt = "あなたはlineのスタンプを見せてもらったと仮定して、そのスタンプを褒めてください。"
+    response = get_chatgpt_response(prompt)
+    print(response)
+
+    line_bot_api.reply_message(event.reply_token, TextSendMessage(text=response))
+
+
+@handler.add(MessageEvent, message=ImageMessage)
+def handle_image(event):
+    """画像への返信"""
+
+    prompt = "あなたはキャンプの写真を見せてもらったと仮定して、その写真を褒めてください。"
+    response = get_chatgpt_response(prompt)
     print(response)
 
     line_bot_api.reply_message(event.reply_token, TextSendMessage(text=response))
