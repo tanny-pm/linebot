@@ -1,2 +1,4 @@
 fastapi==0.93.0
-uvicorn[standard]
+uvicorn[standard]==0.21.0
+line-bot-sdk==2.4.1
+python-dotenv
